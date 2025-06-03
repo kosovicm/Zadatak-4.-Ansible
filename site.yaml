@@ -5,12 +5,14 @@
   pre_tasks:
 
   - name: install updates (CentOS)
+    tags: always ### This tags always runs
     dnf:
       update_only: yes
       update_cache: yes
     when: ansible_distribution == "CentOS"  
   
   - name: install updates (Ubuntu)
+    tags: always ### This tags always runs
     apt:
       upgrade: dist
       update_cache: yes
@@ -21,6 +23,7 @@
   tasks:
 
   - name: install apache2 and php package for Ubuntu
+    tags: apache,apache2,ubuntu ### We cant write whatever we want ( Useful when we want to specific tags to run )
     apt:
       name:
         - apache2
@@ -29,22 +32,32 @@
     when: ansible_distribution == "Ubuntu"  
   
   - name: install apache2 and php package for CentOS
+    tags: apache,centos
     dnf:
       name:
         - httpd
         - php
       state: latest
     when: ansible_distribution == "CentOS"
-
+  - name: copy default html file for site
+    tags: apache,apache2,httpd
+    copy:
+      src: default_site.html ### ( Ne treba /files/default_site.html zato sto on zna da se nalazi u files)
+      dest:  /var/www/html/index.html ### ( Ne mora da bude isto ime )
+      owner: root
+      group: root
+      mode: 0644
 - hosts: db_servers
   become: true
   tasks:
     - name: install mariadb package (CentOS)
+      tags: centos,db,mariadb
       dnf:
         name: mariadb
         state: latest
       when: ansible_distribution == "CentOS"
     - name: install mariadb package (Ubuntu)
+      tags: db,mariadb,ubuntu
       apt:
         name: mariadb-server
         state: latest
