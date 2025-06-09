@@ -3,20 +3,28 @@
 - hosts: all
   become: true
   pre_tasks:
-
-  - name: install updates (CentOS)
+  - name: update repo cache (CentOS)
     tags: always ### This tags always runs
     dnf:
-      update_only: yes
       update_cache: yes
+    changed_when: false
     when: ansible_distribution == "CentOS"  
   
-  - name: install updates (Ubuntu)
+  - name: update repo cache (Ubuntu)
     tags: always ### This tags always runs
     apt:
-      upgrade: dist
       update_cache: yes
-    when: ansible_distribution == "Ubuntu"  
+    changed_when: false
+    when: ansible_distribution == "Ubuntu" 
+
+- hosts: all
+  become: true
+  tasks:   
+    - name: add ssh key for simone
+      tags: always
+      authorized_key:
+        user: simone
+        key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO9CQIhZLaLKD3Llm0hHhknV2XNt+PsH8EPf8RxxdXxD ansible"
 
 #- hosts: workstations
 #  become: true
@@ -56,6 +64,31 @@
         - php
       state: latest
     when: ansible_distribution == "CentOS"
+  
+  - name: start httpd (CentOS)
+    tags: apache,centos,httpd
+    service:
+      name: httpd
+      state: started
+      enabled: yes
+    when: ansible_distribution == "CentOS"
+
+  - name: change e-mail address for admin
+    tags: apache,centos,httpd
+    lineinfile: 
+      path: /etc/httpd/conf/httpd.conf
+      regexp: '^ServerAdmin' ### Regular expression for finding ServerAdmin in httpd.conf file
+      line: ServerAdmin somebody@somewhere.net ### Always run playbook again because maybe typo error or something like that and always will change something that we dont want
+    when: ansible_distribution == "CentOS"
+    register: httpd ### Register ( Save ) in variable
+
+  - name: restart httpd (CentOS)
+    tags: apache,centos,httpd
+    service:
+      name: httpd
+      state: restared
+    when: httpd.changed
+
   - name: copy default html file for site
     tags: apache,apache2,httpd
     copy:
