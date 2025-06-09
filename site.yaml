@@ -1,115 +1,44 @@
 ---
-
-- hosts: all
-  become: true
-  pre_tasks:
-  - name: update repo cache (CentOS)
-    tags: always ### This tags always runs
-    dnf:
-      update_cache: yes
-    changed_when: false
-    when: ansible_distribution == "CentOS"  
-  
-  - name: update repo cache (Ubuntu)
-    tags: always ### This tags always runs
-    apt:
-      update_cache: yes
-    changed_when: false
-    when: ansible_distribution == "Ubuntu" 
-
-- hosts: all
-  become: true
-  tasks:   
-    - name: add ssh key for simone
-      tags: always
-      authorized_key:
-        user: simone
-        key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIO9CQIhZLaLKD3Llm0hHhknV2XNt+PsH8EPf8RxxdXxD ansible"
-
-#- hosts: workstations
-#  become: true
-#  tasks:
-#    
-#    - name: install unzip
-#      package:
-#        name: unzip
-#    
-#    - name: install terraform ### ( Download terraform and put in that directory )
-#      unarchive:
-#        src: https://releases.hashicorp.com/terraform/0.12.28/terraform_0.12.28_linux_amd64.zip
-#        dest: /usr/local/bin
-#        remote_src: yes
-#        mode: 0755
-#        owner: root
-#        group: root
-
-- hosts: web_servers
-  become: true
-  tasks:
-
-  - name: install apache2 and php package for Ubuntu
-    tags: apache,apache2,ubuntu ### We cant write whatever we want ( Useful when we want to specific tags to run )
-    apt:
-      name:
-        - apache2
-        - libapache2-mod-php
-      state: latest
-    when: ansible_distribution == "Ubuntu"  
-  
-  - name: install apache2 and php package for CentOS
-    tags: apache,centos
-    dnf:
-      name:
-        - httpd
-        - php
-      state: latest
-    when: ansible_distribution == "CentOS"
-  
-  - name: start httpd (CentOS)
-    tags: apache,centos,httpd
-    service:
-      name: httpd
-      state: started
-      enabled: yes
-    when: ansible_distribution == "CentOS"
-
-  - name: change e-mail address for admin
-    tags: apache,centos,httpd
-    lineinfile: 
-      path: /etc/httpd/conf/httpd.conf
-      regexp: '^ServerAdmin' ### Regular expression for finding ServerAdmin in httpd.conf file
-      line: ServerAdmin somebody@somewhere.net ### Always run playbook again because maybe typo error or something like that and always will change something that we dont want
-    when: ansible_distribution == "CentOS"
-    register: httpd ### Register ( Save ) in variable
-
-  - name: restart httpd (CentOS)
-    tags: apache,centos,httpd
-    service:
-      name: httpd
-      state: restared
-    when: httpd.changed
-
-  - name: copy default html file for site
-    tags: apache,apache2,httpd
-    copy:
-      src: default_site.html ### ( Ne treba /files/default_site.html zato sto on zna da se nalazi u files)
-      dest:  /var/www/html/index.html ### ( Ne mora da bude isto ime )
-      owner: root
-      group: root
-      mode: 0644
-
-- hosts: db_servers
-  become: true
-  tasks:
-    - name: install mariadb package (CentOS)
-      tags: centos,db,mariadb
-      dnf:
-        name: mariadb
-        state: latest
-      when: ansible_distribution == "CentOS"
-    - name: install mariadb package (Ubuntu)
-      tags: db,mariadb,ubuntu
-      apt:
-        name: mariadb-server
-        state: latest
-      when: ansible_distribution == "Ubuntu"
+ 
+ - hosts: all
+   become: true
+   pre_tasks:
+ 
+   - name: update repository index (CentOS)
+     tags: always
+     dnf:
+       update_cache: yes
+     changed_when: false
+     when: ansible_distribution == "CentOS"
+ 
+   - name: update repository index (Ubuntu)
+     tags: always
+     apt:
+       update_cache: yes
+     changed_when: false
+     when: ansible_distribution == "Ubuntu"
+ 
+ - hosts: all
+   become: true
+   roles:
+     - base
+    
+ - hosts: workstations
+   become: true
+   roles:
+     - workstations
+ 
+ - hosts: web_servers
+   become: true
+   roles:
+     - web_servers
+ 
+ - hosts: db_servers
+   become: true
+   roles:
+     - db_servers
+ 
+ - hosts: file_servers
+   become: true
+   roles:
+     - file_servers
