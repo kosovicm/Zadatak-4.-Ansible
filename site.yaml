@@ -21,12 +21,7 @@
  - hosts: all
    become: true
    roles:
-     - base
-    
- - hosts: workstations
-   become: true
-   roles:
-     - workstations
+     - base  
  
  - hosts: web_servers
    become: true

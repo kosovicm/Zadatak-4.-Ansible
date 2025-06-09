@@ -2,8 +2,8 @@
     tags: apache,apache2,ubuntu ### We cant write whatever we want ( Useful when we want to specific tags to run )
     apt:
       name:
-        - apache2
-        - libapache2-mod-php
+        - "{{ apache_package_name }}"
+        - " {{ php_package_name }}"
       state: latest
     when: ansible_distribution == "Ubuntu"  
   
@@ -31,14 +31,8 @@
       regexp: '^ServerAdmin' ### Regular expression for finding ServerAdmin in httpd.conf file
       line: ServerAdmin somebody@somewhere.net ### Always run playbook again because maybe typo error or something like that and always will change something that we dont want
     when: ansible_distribution == "CentOS"
-    register: httpd ### Register ( Save ) in variable
-
-  - name: restart httpd (CentOS)
-    tags: apache,centos,httpd
-    service:
-      name: httpd
-      state: restared
-    when: httpd.changed
+    #    register: httpd ### Register ( Save ) in variable
+    notify: restart_apache
 
   - name: copy default html file for site
     tags: apache,apache2,httpd
